@@ -1,9 +1,11 @@
 const Crawler = require("crawler")
 const fs = require('fs')
+const ora = require('ora')
+const chalk = require('chalk')
 const arg = process.argv
 
-let links = [];
-let recipes = [];
+const spinner = ora(`Procurando receitas de ${arg[2]}`)
+spinner.start()
 
 let getRecipes = new Crawler({
     maxConnections: 10,
@@ -12,13 +14,7 @@ let getRecipes = new Crawler({
             console.log(error)
         } else {
             var $ = res.$
-            $(".entry-content").each(function(){
-                console.log(this)
-            })
-            // recipes.push({
-            //     'nome': $("title").text(),
-            //     'receita': $
-            // })
+            writeFile(`nome: ${$("title").text()} \n receita: ${$(".p402_premium").text()} ---------------------------------------------------------- \n\n`)
         }
         done();
     }
@@ -27,17 +23,27 @@ let getRecipes = new Crawler({
 let main = new Crawler({
     maxConnections: 10,
     callback: function (err, res, done) {
+        console.log(chalk.cyan('\n Receitas encontradas! \n'))
         if (err) {
             console.log(err)
         } else {
             var $ = res.$
             $('.text-content').each(function () {
-                links.push(this.parent.attribs.href);
                 getRecipes.queue(this.parent.attribs.href)
             })
         }
+        console.log(chalk.green('Receitas salvas!'))
+        spinner.stop()
         done()
     }
 })
+
+let writeFile = (text) => {
+    fs.appendFile(`Receitas de ${arg[2]}`, text, function (err) {
+        if (err) {
+            return console.log(err);
+        }
+    });
+}
 
 main.queue(`https://guiadacozinha.com.br/?s=${arg[2]}`)
